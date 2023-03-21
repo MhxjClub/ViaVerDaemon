@@ -3,6 +3,7 @@ package com.kazuha.vvd;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
 import org.apache.commons.io.FileUtils;
@@ -24,10 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 
 public class main extends JavaPlugin implements Listener {
+    public JSONObject objectfinal = null;
     Boolean getted = false;
     ViaAPI api;
     List<String> nan;
-    public JSONObject objectfinal = null;
     FileConfiguration configuration;
     HashMap<Integer, String> versionmap = new HashMap<>();
 
@@ -45,10 +46,11 @@ public class main extends JavaPlugin implements Listener {
                     array.getJSONObject(i).keySet().forEach(s -> {
                         if (array.getJSONObject(finalI).getString(String.valueOf(s)) != null) {
                             versionmap.put(Integer.parseInt(s), array.getJSONObject(finalI).getString(s));
-                            getLogger().info("[Mapping] " + s + " -> " + array.getJSONObject(finalI).getString(s));
                         }
                     });
+
                 }
+                getLogger().info("[MAPPING] 本地version.json读取成功。");
             });
 
         } catch (IOException e) {
@@ -62,11 +64,10 @@ public class main extends JavaPlugin implements Listener {
     }
 
 
-
     public void simpleHTTPDownload(String Version) {
         BufferedInputStream bis = null;
         BufferedOutputStream bos = null;
-        String HTTP_URL = String.format("https://ghproxy.com/https://github.com/ViaVersion/ViaVersion/releases/download/%s/ViaVersion-%s.jar",Version,Version);
+        String HTTP_URL = String.format("https://ghproxy.com/https://github.com/ViaVersion/ViaVersion/releases/download/%s/ViaVersion-%s.jar", Version, Version);
 
         try {
             int contentLength = getConnection(HTTP_URL).getContentLength();
@@ -74,7 +75,7 @@ public class main extends JavaPlugin implements Listener {
             if (contentLength > 32) {
                 InputStream is = getConnection(HTTP_URL).getInputStream();
                 bis = new BufferedInputStream(is);
-                FileOutputStream fos = new FileOutputStream(this.getDataFolder().getParentFile()+"/"+HTTP_URL.substring(HTTP_URL.lastIndexOf("/")+1));
+                FileOutputStream fos = new FileOutputStream(this.getDataFolder().getParentFile() + "/" + HTTP_URL.substring(HTTP_URL.lastIndexOf("/") + 1));
                 bos = new BufferedOutputStream(fos);
                 int b = 0;
                 byte[] byArr = new byte[1024];
@@ -137,7 +138,7 @@ public class main extends JavaPlugin implements Listener {
                             getLogger().info("云端version.json获取成功:");
                             getLogger().info("最后更新:" + object.getString("last-update"));
                             getLogger().info("最后支持MC版本:" + object.getString("latest-mcversion"));
-                            getLogger().info("对应ViaVersion版本:"+object.getString("viaver-number"));
+                            getLogger().info("对应ViaVersion版本:" + object.getString("viaver-number"));
 
                             if (api.getServerVersion().highestSupportedVersion() > object.getInteger("version")) {
                                 getLogger().warning("[警告] 云端version.json已过期。部分玩家可能出现版本无法识别的问题。");
@@ -158,12 +159,13 @@ public class main extends JavaPlugin implements Listener {
                                 getLogger().info("[E-ASYNC-UPDATER] 检查到更新，正在保存version.json");
                                 File file = new File(getDataFolder(), "version.json");
                                 Writer writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8);
-                                writer.write(object.toString());
+                                writer.write(JSON.toJSONString(object, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue,
+                                        SerializerFeature.WriteDateUseDateFormat));
                                 writer.flush();
                                 writer.close();
                             }
-                            if(!object.getString("viaver-number").equalsIgnoreCase(api.getVersion())){
-                                getLogger().info(String.format("[V-ASYNC-UPDATER] 找到 ViaVersion 更新。 [%s -> %s]正在下载。",api.getVersion(),object.getString("viaver-number")));
+                            if (!object.getString("viaver-number").equalsIgnoreCase(api.getVersion())) {
+                                getLogger().info(String.format("[V-ASYNC-UPDATER] 找到 ViaVersion 更新。 [%s -> %s]正在下载。", api.getVersion(), object.getString("viaver-number")));
                                 simpleHTTPDownload(object.getString("viaver-number"));
                                 getLogger().info("[V-ASYNC-UPDATER] 任务已完成。");
                             }
