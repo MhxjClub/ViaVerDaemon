@@ -133,7 +133,7 @@ public class main extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
                     while (!getted) {
                         try {
-                            JSONObject object = JSON.parseObject(http("https://ghproxy.com/https://raw.githubusercontent.com/MhxjClub/public/main/api/version.json"));
+                            JSONObject object = JSON.parseObject(http(configuration.getString("https://cdn.jsdelivr.net/gh/MhxjClub/public@latest/api/version.json")));
                             if (object == null) continue;
                             getLogger().info("云端version.json获取成功:");
                             getLogger().info("最后更新:" + object.getString("last-update"));
@@ -187,6 +187,7 @@ public class main extends JavaPlugin implements Listener {
         if (api.getServerVersion().supportedVersions().contains(api.getPlayerVersion(e.getPlayer().getUniqueId()))) {
             return;
         }
+        if(!(configuration.contains("player-version-higher") && configuration.contains("player-version-lower")))return;
         if (api.getPlayerVersion(e.getPlayer().getUniqueId()) > api.getServerVersion().highestSupportedVersion()) {
             nan = configuration.getStringList("player-version-higher");
         } else {
