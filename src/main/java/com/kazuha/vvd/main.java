@@ -1,12 +1,10 @@
 package com.kazuha.vvd;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
-import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -25,9 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 
 public class main extends JavaPlugin implements Listener {
-    public JSONObject objectfinal = null;
+    public JsonObject objectfinal = null;
     Boolean getted = false;
-    ViaAPI api;
+    private ViaAPI api;
     List<String> nan;
     FileConfiguration configuration;
     HashMap<Integer, String> versionmap = new HashMap<>();
@@ -35,21 +33,15 @@ public class main extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-
+        Gson gson = new Gson();
         saveResource("version.json", false);
         try {
-            objectfinal = JSONObject.parseObject(FileUtils.readFileToString(new File(getDataFolder(), "version.json")));
+            objectfinal = gson.fromJson(new FileReader(new File(getDataFolder(), "version.json")), JsonObject.class);
             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                JSONArray array = objectfinal.getJSONArray("map");
-                for (int i = 0; i < array.size(); i++) {
-                    int finalI = i;
-                    array.getJSONObject(i).keySet().forEach(s -> {
-                        if (array.getJSONObject(finalI).getString(String.valueOf(s)) != null) {
-                            versionmap.put(Integer.parseInt(s), array.getJSONObject(finalI).getString(s));
-                        }
-                    });
-
-                }
+                JsonObject obj = objectfinal.getAsJsonObject("map");
+                obj.entrySet().forEach(entry -> {
+                    versionmap.put(Integer.parseInt(entry.getKey()), entry.getValue().getAsString());
+                });
                 getLogger().info("[MAPPING] 本地version.json读取成功。");
             });
 
@@ -64,55 +56,7 @@ public class main extends JavaPlugin implements Listener {
     }
 
 
-    public void simpleHTTPDownload(String Version) {
-        BufferedInputStream bis = null;
-        BufferedOutputStream bos = null;
-        String HTTP_URL = String.format("https://ghproxy.com/https://github.com/ViaVersion/ViaVersion/releases/download/%s/ViaVersion-%s.jar", Version, Version);
 
-        try {
-            int contentLength = getConnection(HTTP_URL).getContentLength();
-            getLogger().info("[D-ASYNC-DOWNLOADER] LENGTH = " + contentLength);
-            if (contentLength > 32) {
-                InputStream is = getConnection(HTTP_URL).getInputStream();
-                bis = new BufferedInputStream(is);
-                FileOutputStream fos = new FileOutputStream(this.getDataFolder().getParentFile() + "/" + HTTP_URL.substring(HTTP_URL.lastIndexOf("/") + 1));
-                bos = new BufferedOutputStream(fos);
-                int b = 0;
-                byte[] byArr = new byte[1024];
-                while ((b = bis.read(byArr)) != -1) {
-                    bos.write(byArr, 0, b);
-                }
-
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (bis != null) {
-                    bis.close();
-                }
-                if (bos != null) {
-                    bos.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public HttpURLConnection getConnection(String httpUrl) throws Exception {
-        URL url = new URL(httpUrl);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("Content-Type", "application/octet-stream");
-        connection.setDoOutput(true);
-        connection.setDoInput(true);
-        connection.setRequestProperty("Connection", "Keep-Alive");
-        connection.connect();
-        return connection;
-
-    }
 
     public String http(String httpKey) throws Exception {
         URL url = new URL(httpKey);
@@ -131,64 +75,44 @@ public class main extends JavaPlugin implements Listener {
 
     public void initVersion() {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                    while (!getted) {
-                        try {
-                            JSONObject object = JSON.parseObject(http(configuration.getString("https://cdn.jsdelivr.net/gh/MhxjClub/public@latest/api/version.json")));
-                            if (object == null) continue;
-                            getLogger().info("云端version.json获取成功:");
-                            getLogger().info("最后更新:" + object.getString("last-update"));
-                            getLogger().info("最后支持MC版本:" + object.getString("latest-mcversion"));
-                            getLogger().info("对应ViaVersion版本:" + object.getString("viaver-number"));
+            try {
+                JsonObject object = new Gson().fromJson(http(getConfig().getString("update-url")), JsonObject.class);
+                getLogger().info("云端version.json获取成功:");
+                getLogger().info("最后更新:" + object.get("last-update").getAsString());
+                getLogger().info("最后支持MC版本:" + object.get("latest-mcversion").getAsString());
+                getLogger().info("对应ViaVersion版本:" + object.get("viaver-number").getAsString());
 
-                            if (api.getServerVersion().highestSupportedVersion() > object.getInteger("version")) {
-                                getLogger().warning("[警告] 云端version.json已过期。部分玩家可能出现版本无法识别的问题。");
-                            }
-                            JSONArray array = object.getJSONArray("map");
-                            for (int i = 0; i < array.size(); i++) {
-                                int finalI = i;
-                                array.getJSONObject(i).keySet().forEach(s -> {
-                                    if (array.getJSONObject(finalI).getString(String.valueOf(s)) != null) {
-                                        versionmap.put(Integer.parseInt(s), array.getJSONObject(finalI).getString(String.valueOf(s)));
-                                        getLogger().info("[Mapping] " + s + " -> " + array.getJSONObject(finalI).getString(String.valueOf(s)));
-                                    }
-                                });
-
-                            }
-                            getted = true;
-                            if (object.getInteger("version") > objectfinal.getInteger("version")) {
-                                getLogger().info("[E-ASYNC-UPDATER] 检查到更新，正在保存version.json");
-                                File file = new File(getDataFolder(), "version.json");
-                                Writer writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8);
-                                writer.write(JSON.toJSONString(object, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue,
-                                        SerializerFeature.WriteDateUseDateFormat));
-                                writer.flush();
-                                writer.close();
-                            }
-                            if (!object.getString("viaver-number").equalsIgnoreCase(api.getVersion())) {
-                                getLogger().info(String.format("[V-ASYNC-UPDATER] 找到 ViaVersion 更新。 [%s -> %s]正在下载。", api.getVersion(), object.getString("viaver-number")));
-                                simpleHTTPDownload(object.getString("viaver-number"));
-                                getLogger().info("[V-ASYNC-UPDATER] 任务已完成。");
-                            }
-
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            getLogger().info("无法从云端获取各版本信息。");
-                            getLogger().info("正在重试。");
-                        }
-                    }
+                if (api.getServerVersion().highestSupportedProtocolVersion().getVersion() > object.get("version").getAsInt()) {
+                    getLogger().warning("[警告] 云端version.json已过期。部分玩家可能出现版本无法识别的问题。");
                 }
+                JsonObject obj = objectfinal.getAsJsonObject("map");
+                obj.entrySet().forEach(entry -> versionmap.put(Integer.parseInt(entry.getKey()), entry.getValue().getAsString()));
+                getLogger().info("[MAPPING] 本地version.json读取成功。");
+                if (object.get("version").getAsInt() > objectfinal.get("version").getAsInt()) {
+                    getLogger().info("[E-ASYNC-UPDATER] 检查到更新，正在保存version.json");
+                    File file = new File(getDataFolder(), "version.json");
+                    FileOutputStream stream = new FileOutputStream(file);
+                    stream.write(new Gson().toJson(object).getBytes(StandardCharsets.UTF_8));
+                    stream.close();
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                getLogger().info("无法从云端获取各版本信息。");
+                getLogger().info("正在重试。");
+            }
+        }
         );
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         if (versionmap.isEmpty()) return;
-        if (api.getServerVersion().supportedVersions().contains(api.getPlayerVersion(e.getPlayer().getUniqueId()))) {
+        if (api.getServerVersion().supportedProtocolVersions().contains(api.getPlayerProtocolVersion(e.getPlayer().getUniqueId()))) {
             return;
         }
         if(!(configuration.contains("player-version-higher") && configuration.contains("player-version-lower")))return;
-        if (api.getPlayerVersion(e.getPlayer().getUniqueId()) > api.getServerVersion().highestSupportedVersion()) {
+        if (api.getPlayerVersion(e.getPlayer().getUniqueId()) > api.getServerVersion().highestSupportedProtocolVersion().getVersion()) {
             nan = configuration.getStringList("player-version-higher");
         } else {
             nan = configuration.getStringList("player-version-lower");
@@ -199,10 +123,10 @@ public class main extends JavaPlugin implements Listener {
     }
 
     public String Trans(String Raw, Player p) {
-        Raw = Raw.replace("%ver%", versionmap.get(api.getPlayerVersion(p)));
-        Raw = Raw.replace("%pro%", String.valueOf(api.getPlayerVersion(p)));
-        Raw = Raw.replace("%sver%", versionmap.get(api.getServerVersion().highestSupportedVersion()));
-        Raw = Raw.replace("%spro%", String.valueOf(api.getServerVersion().highestSupportedVersion()));
+        Raw = Raw.replace("%ver%", versionmap.get(api.getPlayerVersion(p.getUniqueId())));
+        Raw = Raw.replace("%pro%", String.valueOf(api.getPlayerVersion(p.getUniqueId())));
+        Raw = Raw.replace("%sver%", versionmap.get(api.getServerVersion().highestSupportedProtocolVersion().getVersion()));
+        Raw = Raw.replace("%spro%", String.valueOf(api.getServerVersion().highestSupportedProtocolVersion().getVersion()));
         return Raw;
     }
 

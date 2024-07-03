@@ -2,5 +2,5 @@ name: ViaVersionDaemon
 description: Player notice
 depend: [ ViaVersion ]
 author: KazuhaAyato
-version: 422031
+version: 2.3
 main: com.kazuha.vvd.main
