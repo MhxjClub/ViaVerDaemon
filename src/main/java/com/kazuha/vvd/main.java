@@ -108,11 +108,11 @@ public class main extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         if (versionmap.isEmpty()) return;
-        if (api.getServerVersion().supportedProtocolVersions().contains(api.getPlayerProtocolVersion(e.getPlayer().getUniqueId()))) {
+        if (api.getServerVersion().lowestSupportedProtocolVersion().getOriginalVersion() == api.getPlayerProtocolVersion(e.getPlayer().getUniqueId()).getOriginalVersion()) {
             return;
         }
         if(!(configuration.contains("player-version-higher") && configuration.contains("player-version-lower")))return;
-        if (api.getPlayerVersion(e.getPlayer().getUniqueId()) > api.getServerVersion().highestSupportedProtocolVersion().getVersion()) {
+        if (api.getPlayerVersion(e.getPlayer().getUniqueId()) > api.getServerVersion().highestSupportedProtocolVersion().getOriginalVersion()) {
             nan = configuration.getStringList("player-version-higher");
         } else {
             nan = configuration.getStringList("player-version-lower");
