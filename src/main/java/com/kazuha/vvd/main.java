@@ -40,6 +40,7 @@ public class main extends JavaPlugin implements Listener {
             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
                 JsonObject obj = objectfinal.getAsJsonObject("map");
                 obj.entrySet().forEach(entry -> {
+                     getLogger().info("[MAPPING]" + entry.getKey() +" -> " + entry.getValue().getAsString());
                     versionmap.put(Integer.parseInt(entry.getKey()), entry.getValue().getAsString());
                 });
                 getLogger().info("[MAPPING] 本地version.json读取成功。");
@@ -85,9 +86,12 @@ public class main extends JavaPlugin implements Listener {
                 if (api.getServerVersion().highestSupportedProtocolVersion().getVersion() > object.get("version").getAsInt()) {
                     getLogger().warning("[警告] 云端version.json已过期。部分玩家可能出现版本无法识别的问题。");
                 }
-                JsonObject obj = objectfinal.getAsJsonObject("map");
-                obj.entrySet().forEach(entry -> versionmap.put(Integer.parseInt(entry.getKey()), entry.getValue().getAsString()));
-                getLogger().info("[MAPPING] 本地version.json读取成功。");
+                JsonObject obj = object.getAsJsonObject("map");
+                obj.entrySet().forEach(entry -> {
+                    versionmap.put(Integer.parseInt(entry.getKey()), entry.getValue().getAsString());
+                    getLogger().info("[MAPPING]" + entry.getKey() +" -> " + entry.getValue().getAsString());
+                });
+                getLogger().info("[MAPPING] 分析成功。");
                 if (object.get("version").getAsInt() > objectfinal.get("version").getAsInt()) {
                     getLogger().info("[E-ASYNC-UPDATER] 检查到更新，正在保存version.json");
                     File file = new File(getDataFolder(), "version.json");
@@ -98,8 +102,7 @@ public class main extends JavaPlugin implements Listener {
 
             } catch (Exception e) {
                 e.printStackTrace();
-                getLogger().info("无法从云端获取各版本信息。");
-                getLogger().info("正在重试。");
+                getLogger().info("无法从云端获取各版本信息。将使用插件备份");
             }
         }
         );
@@ -107,7 +110,8 @@ public class main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
-        if (versionmap.isEmpty()) return;
+        Bukkit.getScheduler().runTaskLaterAsynchronously(this,()->{
+                    if (versionmap.isEmpty()) return;
         if (api.getServerVersion().lowestSupportedProtocolVersion().getOriginalVersion() == api.getPlayerProtocolVersion(e.getPlayer().getUniqueId()).getOriginalVersion()) {
             return;
         }
@@ -120,6 +124,7 @@ public class main extends JavaPlugin implements Listener {
         for (String ec : nan) {
             e.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', Trans(ec, e.getPlayer())));
         }
+        },getConfig().getLong("send-delay"));
     }
 
     public String Trans(String Raw, Player p) {
