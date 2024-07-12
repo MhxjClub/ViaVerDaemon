@@ -1,7 +1,6 @@
 package com.kazuha.vvd;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.ViaAPI;
@@ -18,13 +17,11 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 
 public class main extends JavaPlugin implements Listener {
     public JsonObject objectfinal = null;
-    Boolean getted = false;
     private ViaAPI api;
     List<String> nan;
     FileConfiguration configuration;
@@ -81,7 +78,6 @@ public class main extends JavaPlugin implements Listener {
                 getLogger().info("云端version.json获取成功:");
                 getLogger().info("最后更新:" + object.get("last-update").getAsString());
                 getLogger().info("最后支持MC版本:" + object.get("latest-mcversion").getAsString());
-                getLogger().info("对应ViaVersion版本:" + object.get("viaver-number").getAsString());
 
                 if (api.getServerVersion().highestSupportedProtocolVersion().getVersion() > object.get("version").getAsInt()) {
                     getLogger().warning("[警告] 云端version.json已过期。部分玩家可能出现版本无法识别的问题。");
@@ -101,8 +97,7 @@ public class main extends JavaPlugin implements Listener {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
-                getLogger().info("无法从云端获取各版本信息。将使用插件备份");
+                getLogger().info("无法从云端获取各版本信息。将使用本地文件");
             }
         }
         );

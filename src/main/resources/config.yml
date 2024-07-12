@@ -3,13 +3,13 @@ update-url: "https://mc.fanet.top/e.json"
 player-version-higher:
   - " "
   - "&7◈ &6LKQ2&7-&bKisa&2tsutai &8»"
-  - "&7  &c注意到你正在使用「&e%ver%(%pro%)&c」, 一个高于该子服服务端的版本"
-  - "&7  &c我们十分建议您更换至「&a%sver%(%spro%)&c」,这将显著提升游戏体验并且减少误封率"
+  - "  注意到你正在使用「&e%ver%(%pro%)&f」,一个&b高于&f该子服的版本"
+  - "  十分建议您更换至「&a%sver%(%spro%)&f」,这将显著提升游戏体验并且减少误封率"
   - " "
 player-version-lower:
   - " "
   - "&7◈ &6LKQ2&7-&bKisa&2tsutai &8»"
-  - "&7  &c注意到你正在使用「&e%ver%(%pro%)&c」, 一个高于该子服服务端的版本"
-  - "&7  &c我们十分建议您更换至「&a%sver%(%spro%)&c」,这将显著提升游戏体验并且减少误封率"
+  - "  &f注意到你正在使用「&e%ver%(%pro%)&f」,一个&c低于&f该子服的版本"
+  - "  &f我们十分建议您更换至「&a%sver%(%spro%)&f」,这将显著提升游戏体验并且减少误封率"
   - " "
 send-delay: 20 # tick
